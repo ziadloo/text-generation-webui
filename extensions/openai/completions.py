@@ -10,6 +10,8 @@ from extensions.openai.utils import debug_msg, end_line
 from modules import shared
 from modules.text_generation import decode, encode, generate_reply
 from transformers import LogitsProcessor, LogitsProcessorList
+import jinja2
+import traceback
 
 
 # Thanks to @Cypherfox [Cypherfoxy] for the logits code, blame to @matatonic
@@ -161,10 +163,15 @@ def messages_to_prompt(body: dict, req_params: dict, max_tokens):
     if 'stopping_strings' not in req_params:
         req_params['stopping_strings'] = []
 
+    j2_template = None
     # Instruct models can be much better
     if shared.settings['instruction_template']:
         try:
             instruct = yaml.safe_load(open(f"instruction-templates/{shared.settings['instruction_template']}.yaml", 'r'))
+
+            print("{{{")
+            print(shared.settings['instruction_template'])
+            print("}}}")
 
             template = instruct['turn_template']
             system_message_template = "{message}"
@@ -173,6 +180,7 @@ def messages_to_prompt(body: dict, req_params: dict, max_tokens):
             user_message_template = template[:bot_start].replace('<|user-message|>', '{message}').replace('<|user|>', instruct.get('user', ''))
             bot_message_template = template[bot_start:].replace('<|bot-message|>', '{message}').replace('<|bot|>', instruct.get('bot', ''))
             bot_prompt = bot_message_template[:bot_message_template.find('{message}')].rstrip(' ')
+            j2_template = instruct.get("j2_template", None)
 
             role_formats = {
                 'user': user_message_template,
@@ -228,10 +236,14 @@ def messages_to_prompt(body: dict, req_params: dict, max_tokens):
         else:
             chat_msgs.extend([msg])
 
-    system_msg = '\n'.join(system_msgs)
-    system_msg = end_line(system_msg)
+    if j2_template is None:
+        system_msg = '\n'.join(system_msgs)
+        system_msg = end_line(system_msg)
 
-    prompt = system_msg + context_msg + ''.join(chat_msgs) + role_formats['prompt']
+        prompt = system_msg + context_msg + ''.join(chat_msgs) + role_formats['prompt']
+    else:
+        # Create a Jinja2 template object
+        prompt = jinja2.Template(j2_template).render(body)
 
     token_count = len(encode(prompt)[0])
 

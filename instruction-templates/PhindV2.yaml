@@ -1,0 +1,18 @@
+user: "### Instruction:"
+bot: "### Response:"
+turn_template: "<|user|>\n<|user-message|>\n\n<|bot|>\n<|bot-message|>\n\n"
+context: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n"
+j2_template: |-
+  {% for message in messages -%}
+  {% if message.role == "system" -%}
+  ### System Prompt
+  {{ message.content }}
+  {% elif message.role == "user" %}
+  ### User Message
+  {{ message.content }}
+  {% elif message.role == "assistant" %}
+  ### Assistant
+  {{ message.content }}
+  {% endif -%}
+  {% endfor %}
+  ### Assistant

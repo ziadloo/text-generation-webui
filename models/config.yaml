@@ -180,3 +180,7 @@
   instruction_template: 'ChatML'
 .*(WizardCoder-Python-34B-V1.0|Phind-CodeLlama-34B-v2|CodeBooga-34B-v0.1):
   instruction_template: 'Alpaca'
+.*phind.*v1.*:
+  instruction_template: 'PhindV1'
+.*phind.*v2.*:
+  instruction_template: 'PhindV2'
